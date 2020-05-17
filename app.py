@@ -64,8 +64,8 @@ def convert_srt_to_audio(in_file):
         all_dialogs = lines.strip().split("\n\n")
         final_song = None
         privious_time = 0
-        for dialog in all_dialogs[:2]:
-        # for dialog in all_dialogs:
+        # for dialog in all_dialogs[:2]:
+        for dialog in all_dialogs:
             each_dialog = dialog.split("\n")
             count, times, dia_text = "%s" % (each_dialog[0]), each_dialog[1], " ".join(each_dialog[2:])
             start_time_str, end_time_str = times.split('-->')
