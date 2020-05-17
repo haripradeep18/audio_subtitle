@@ -1,16 +1,30 @@
-import os,cv2
-from flask import Flask, render_template, request,jsonify, send_file
-from PIL import Image
+from flask import (
+    Flask,
+    request,
+    render_template,
+    send_from_directory,
+    url_for,
+    jsonify,
+    send_file
+)
 
-import numpy as np
-import time
+import sys, os, re, time, shutil
+from gtts import gTTS
+from pydub import AudioSegment
+basedir = os.path.abspath(os.path.dirname(__file__))
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = os.path.basename('.')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+from logging import Formatter, FileHandler
+handler = FileHandler(os.path.join(basedir, 'log.txt'), encoding='utf8')
+handler.setFormatter(
+    Formatter("[%(asctime)s] %(levelname)-8s %(message)s", "%Y-%m-%d %H:%M:%S")
+)
+app.logger.addHandler(handler)
 
-start_time = time.time()
+UPLOAD_FOLDER = os.path.basename('./upload')
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['ALLOWED_EXTENSIONS'] = set(['txt', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'srt'])
 
 
 def convert_milliseconds(t):
@@ -25,9 +39,10 @@ def convert_milliseconds(t):
 def convert_srt_to_audio(in_file):
     file = open(in_file, "r", encoding='utf-8')
     lines = file.read()
-
+    print(in_file)
     current_directory = UPLOAD_FOLDER
-    str_fold = in_file.split('.')[0]
+    str_fold = os.path.basename(in_file).split('.')[0]
+    str_fold = re.sub('[^a-zA-Z0-9\_\n\.\/]', '', str_fold)
     str_directory = os.path.join(current_directory, str_fold)
     if not os.path.exists(str_directory):
         os.makedirs(str_directory)
@@ -62,11 +77,50 @@ def convert_srt_to_audio(in_file):
             final_song = final_song + silent_segment + dia_file
         privious_time = end_time
 
-    final_out_file = "%s.mp3" % (in_file.split('.')[0])
-    os.remove(str_directory)
+    current_directory = os.getcwd()
+    final_out_file = os.path.join(current_directory, "%s.mp3" % (str_fold))
+    print(final_out_file)
+    print(str_fold)
     final_song.export(final_out_file, format="mp3")
-    return send_file(final_out_file, as_attachment=True)
+    send_file(final_out_file, attachment_filename='python.mp3')
+    print('python.jpg')
     file.close()
+    return final_out_file
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1] in app.config['ALLOWED_EXTENSIONS']
+
+
+@app.context_processor
+def override_url_for():
+    return dict(url_for=dated_url_for)
+
+
+def dated_url_for(endpoint, **values):
+    if endpoint == 'js_static':
+        filename = values.get('filename', None)
+        if filename:
+            file_path = os.path.join(app.root_path,
+                                     'static/js', filename)
+            values['q'] = int(os.stat(file_path).st_mtime)
+    elif endpoint == 'css_static':
+        filename = values.get('filename', None)
+        if filename:
+            file_path = os.path.join(app.root_path,
+                                     'static/css', filename)
+            values['q'] = int(os.stat(file_path).st_mtime)
+    return url_for(endpoint, **values)
+
+
+@app.route('/css/<path:filename>')
+def css_static(filename):
+    return send_from_directory(app.root_path + '/static/css/', filename)
+
+
+@app.route('/js/<path:filename>')
+def js_static(filename):
+    return send_from_directory(app.root_path + '/static/js/', filename)
 
 
 @app.route('/')
@@ -74,28 +128,29 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/api/ocr', methods=['POST','GET'])
-def upload_file():
-    if request.method == "GET":
-        return "This is the api BLah blah"
-    elif request.method == "POST":
-        file = request.files['image']
+@app.route('/download/<path:filename>', methods=['POST', 'GET'])
+def downloadFile (filename):
+    #For windows you need to use drive name [ex: F:/Example.pdf]
+    path = os.path.join(UPLOAD_FOLDER, filename)
+    return send_file(path, as_attachment=True)
 
-        f = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+@app.route('/uploadajax', methods=['POST'])
+def upldfile():
+    if request.method == 'POST':
+        files = request.files['file']
+        if files and allowed_file(files.filename):
+            filename = files.filename
+            app.logger.info('FileName: ' + filename)
+            # updir = os.path.join(basedir, 'upload/')
+            updir = UPLOAD_FOLDER
+            saved_file = os.path.join(updir, filename)
+            files.save(saved_file)
+            print("saved file path %s"%(saved_file))
+            final_out_file = convert_srt_to_audio(saved_file)
+            print("download is done")
+            file_size = os.path.getsize(saved_file)
+            return jsonify(name=filename, size=file_size, downloadpath=final_out_file)
 
-        # add your custom code to check that the uploaded file is a valid image and not a malicious file (out-of-scope for this post)
-        file.save(f)
-        # print(file.filename)
 
-        file_name = UPLOAD_FOLDER+"/"+file.filename
-        final_output = convert_srt_to_audio(file_name)
-
-        # final_output = read_text_from_image(file_name, small_text, vertical_text)
-        # if os.path.exists(UPLOAD_FOLDER + '/sub_images'): os.remove(UPLOAD_FOLDER + '/sub_images')
-        os.remove(UPLOAD_FOLDER + "/" + file.filename)
-
-        return jsonify({"text" : text})
-
-app.run("0.0.0.0",5000,threaded=True,debug=True)
-
-
+if __name__ == '__main__':
+    app.run(debug=True)

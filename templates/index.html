@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="{{url_for('css_static', filename='style.css')}}">
+</head>
+<body>
+
+<form id="uploadform" method="post" enctype="multipart/form-data">
+    <label for="file">Select a file</label>
+    <input name="file" type="file">
+    <input name="download_name" id="id-download" type="hidden" value="/home/melvault/Documents/projects/audio_tasks/flask-fileupload-ajax-example/Parasite_2019_tamil.mp3" >
+
+    <button id="submit" type="button">Upload</button>
+    <br>
+    <a id="download_link" href="" >download here</a>
+</form>
+<p>Result Filename:&nbsp;<span id="resultFilename"> here</span></p>
+<p>Result Filesize:&nbsp;<span id="resultFilesize">here</span></p>
+
+
+<script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+<script src="{{url_for('js_static', filename='app.js')}}"></script>
+</body>
+</html>

@@ -1,11 +1,11 @@
-# OCR Flask app
-A simple flask app that takes an image as input and returns the text within it.
+# convert subtitle to audio
+A simple flask app that takes an srt file as input and returns the audio(.mp3) within it.
 
 ## Install python packages
-- pytessract
 - flask
-- OpenCv
-- Pillow
+- pydub
+- gTTS
+- gTTS-token
 
 ## Use 
   - Run the application
@@ -13,11 +13,8 @@ A simple flask app that takes an image as input and returns the text within it.
     Run the web application and use it.
   - API
     api end point
-    ```curl -i -X POST -F files=@image.png http://127.0.0.1:5000/api/ocr```
+    ```curl -i -X POST -F files=@subtitle.srt http://127.0.0.1:5000/api/download```
     also add the preprocess parameter (thresh or blur).
 
 ## Screenshots
 
-![Alt text](/static/screenshots/1.png?raw=true )
-![Alt text](/static/screenshots/2.png?raw=true )
-![Alt text](/static/screenshots/3.png?raw=true )
