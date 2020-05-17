@@ -48,13 +48,13 @@ def convert_milliseconds(t):
     miliseconds = int(3600000 * hours + 60000 * minutes + 1000 * seconds)
     return miliseconds
 
-
 def convert_srt_to_audio(in_file):
     try:
+        final_out_file = None
         file = open(in_file, "r", encoding='utf-8')
         lines = file.read()
-        logger.info("convert_srt_to_audio called")
-        logger.info(in_file)
+        app.logger.info("convert_srt_to_audio called")
+        app.logger.info(in_file)
         str_fold = os.path.basename(in_file).split('.')[0]
         str_fold = re.sub('[^a-zA-Z0-9\_\n\.\/]', '', str_fold)
         str_directory = os.path.join(UPLOAD_FOLDER, str_fold)
@@ -64,8 +64,8 @@ def convert_srt_to_audio(in_file):
         all_dialogs = lines.strip().split("\n\n")
         final_song = None
         privious_time = 0
-
         for dialog in all_dialogs[:2]:
+        # for dialog in all_dialogs:
             each_dialog = dialog.split("\n")
             count, times, dia_text = "%s" % (each_dialog[0]), each_dialog[1], " ".join(each_dialog[2:])
             start_time_str, end_time_str = times.split('-->')
@@ -92,12 +92,12 @@ def convert_srt_to_audio(in_file):
             privious_time = end_time
 
         final_out_file = os.path.join(UPLOAD_FOLDER, "%s.mp3" % (str_fold))
-        logger.info("final_out_file - %s"%(final_out_file))
+        app.logger.info("final_out_file - %s"%(final_out_file))
 
         final_song.export(final_out_file, format="mp3")
 
     except Exception:
-        logger.error(traceback.format_exc())
+        app.logger.error(traceback.format_exc())
     finally:
         file.close()
     return final_out_file
@@ -129,22 +129,19 @@ def dated_url_for(endpoint, **values):
 def css_static(filename):
     return send_from_directory(app.root_path + '/static/css/', filename)
 
-
 @app.route('/js/<path:filename>')
 def js_static(filename):
     return send_from_directory(app.root_path + '/static/js/', filename)
-
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-
 @app.route('/download/<path:filename>', methods=['POST', 'GET'])
 def downloadFile (filename):
     #For windows you need to use drive name [ex: F:/Example.pdf]
-    path = os.path.join(UPLOAD_FOLDER, filename)
-    return send_file(path, as_attachment=True)
+    # path = os.path.join(UPLOAD_FOLDER, filename)
+    return send_file(filename, as_attachment=True)
 
 @app.route('/uploadajax', methods=['POST'])
 def upldfile():
@@ -158,14 +155,15 @@ def upldfile():
                 updir = UPLOAD_FOLDER
                 saved_file = os.path.join(updir, filename)
                 files.save(saved_file)
-                logger.info("saved file path - %s" % (saved_file))
+                app.logger.info("saved file path - %s" % (saved_file))
                 final_out_file = convert_srt_to_audio(saved_file)
-                logger.info("download is done")
+                app.logger.info("download is done")
                 file_size = os.path.getsize(saved_file)
+                return jsonify(name=filename, size=file_size, downloadpath=final_out_file)
 
             except Exception:
-                logger.error(traceback.format_exc())
-            return jsonify(name=filename, size=file_size, downloadpath=final_out_file)
+                app.logger.error(traceback.format_exc())
+                return jsonify(name=filename, size=None, downloadpath=None)
 
 
 if __name__ == '__main__':

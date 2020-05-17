@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="{{url_for('css_static', filename='style.css')}}">
 </head>
 <body>
-
+<div id="overlay"></div>
 <form id="uploadform" method="post" enctype="multipart/form-data">
     <label for="file">Select a file</label>
     <input name="file" type="file">
@@ -13,11 +13,14 @@
 
     <button id="submit" type="button">Upload</button>
     <br>
-    <a id="download_link" href="" >download here</a>
+
 </form>
 <p>Result Filename:&nbsp;<span id="resultFilename"> here</span></p>
 <p>Result Filesize:&nbsp;<span id="resultFilesize">here</span></p>
 
+<br>
+<br>
+<div id="download_button"></div>
 
 <script src="https://code.jquery.com/jquery-1.10.1.min.js"></script>
 <script src="{{url_for('js_static', filename='app.js')}}"></script>
