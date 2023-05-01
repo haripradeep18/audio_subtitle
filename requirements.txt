@@ -1,4 +1,4 @@
-Flask==1.1.1
+Flask==2.3.2
 pydub==0.23.1
 gTTS==2.1.1
 gTTS-token==1.1.3
